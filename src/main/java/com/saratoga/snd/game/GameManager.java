@@ -56,6 +56,29 @@ public class GameManager {
     }
 
     /**
+     * Cleanup all timers and bomb.
+     */
+    public void cleanup() {
+        stopRoundTimer();
+        if (bomb != null) {
+            bomb.cleanup();
+            bomb = null;
+        }
+    }
+
+    /**
+     * Handle player leaving before they are removed from the map.
+     * Used to drop bomb if they are carrying it.
+     */
+    public void onPlayerLeavePreRemove(org.bukkit.entity.Player player, boolean hasBomb) {
+        if (hasBomb && bomb != null && bomb.getCarrier() != null
+                && bomb.getCarrier().equals(player.getUniqueId())) {
+            bomb.drop(player.getLocation());
+            arena.broadcast(Messages.BOMB_DROPPED);
+        }
+    }
+
+    /**
      * Start the next round.
      */
     public void startNextRound() {

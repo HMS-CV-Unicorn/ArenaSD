@@ -43,8 +43,9 @@ public class SndArena {
             return false;
         }
 
-        // Only allow joining when waiting for players
-        if (state != ArenaState.WAITING) {
+        // Allow joining during WAITING and COUNTDOWN (before first round starts)
+        // Block during PLAYING, INTERMISSION (between rounds), and ENDING
+        if (state != ArenaState.WAITING && state != ArenaState.COUNTDOWN) {
             Messages.send(player, Messages.PREFIX.append(
                     net.kyori.adventure.text.Component.text("試合が進行中です。終了までお待ちください。",
                             net.kyori.adventure.text.format.NamedTextColor.RED)));
@@ -88,9 +89,20 @@ public class SndArena {
      * Player leaves this arena.
      */
     public void leave(Player player) {
-        PlayerData data = players.remove(player.getUniqueId());
+        PlayerData data = players.get(player.getUniqueId());
         if (data == null)
             return;
+
+        Team leavingTeam = data.getTeam();
+        boolean hasBomb = data.hasBomb();
+
+        // Notify game manager BEFORE removing (so it can drop bomb etc)
+        if (gameManager != null && (state == ArenaState.PLAYING || state == ArenaState.INTERMISSION)) {
+            gameManager.onPlayerLeavePreRemove(player, hasBomb);
+        }
+
+        // NOW remove from map
+        players.remove(player.getUniqueId());
 
         // Restore player state
         SavedPlayerState saved = savedStates.remove(player.getUniqueId());
@@ -98,18 +110,42 @@ public class SndArena {
             saved.restore(player);
         }
 
-        // Notify game manager (if game is active)
-        if (gameManager != null && (state == ArenaState.PLAYING || state == ArenaState.INTERMISSION)) {
-            gameManager.onPlayerLeave(player);
-        }
-
         broadcast(Messages.PREFIX.append(
                 net.kyori.adventure.text.Component.text(player.getName() + " が退出しました",
                         net.kyori.adventure.text.format.NamedTextColor.YELLOW)));
 
-        // Check if game should end - no players left
-        if (players.isEmpty() && state != ArenaState.WAITING && state != ArenaState.ENDING) {
+        // Check team count AFTER removing
+        if (state == ArenaState.PLAYING || state == ArenaState.INTERMISSION) {
+            checkTeamCountAfterLeave(leavingTeam);
+        }
+    }
+
+    /**
+     * Check if a team has no players after someone leaves.
+     */
+    private void checkTeamCountAfterLeave(Team leavingTeam) {
+        List<PlayerData> redPlayers = getPlayersOnTeam(Team.RED);
+        List<PlayerData> bluePlayers = getPlayersOnTeam(Team.BLUE);
+
+        if (redPlayers.isEmpty() && bluePlayers.isEmpty()) {
+            // Everyone left
             forceEndGame();
+        } else if (redPlayers.isEmpty()) {
+            // Red team empty - Blue wins
+            broadcast(Messages.PREFIX.append(
+                    net.kyori.adventure.text.Component.text(
+                            plugin.getMainConfig().getRedTeamName() + "が退出。" + plugin.getMainConfig().getBlueTeamName()
+                                    + "の勝利！",
+                            net.kyori.adventure.text.format.NamedTextColor.GOLD)));
+            forceEndGameWithWinner(Team.BLUE);
+        } else if (bluePlayers.isEmpty()) {
+            // Blue team empty - Red wins
+            broadcast(Messages.PREFIX.append(
+                    net.kyori.adventure.text.Component.text(
+                            plugin.getMainConfig().getBlueTeamName() + "が退出。" + plugin.getMainConfig().getRedTeamName()
+                                    + "の勝利！",
+                            net.kyori.adventure.text.format.NamedTextColor.GOLD)));
+            forceEndGameWithWinner(Team.RED);
         }
     }
 
@@ -121,14 +157,43 @@ public class SndArena {
 
         // Cleanup game manager
         if (gameManager != null) {
-            Bomb bomb = gameManager.getBomb();
-            if (bomb != null) {
-                bomb.cleanup();
-            }
+            gameManager.cleanup();
         }
 
         // Reset immediately
         reset();
+    }
+
+    /**
+     * Force end the game with a winner.
+     */
+    public void forceEndGameWithWinner(Team winner) {
+        state = ArenaState.ENDING;
+
+        // Cleanup game manager
+        if (gameManager != null) {
+            gameManager.cleanup();
+        }
+
+        String winnerName = winner == Team.RED ? plugin.getMainConfig().getRedTeamName()
+                : plugin.getMainConfig().getBlueTeamName();
+        broadcast(Messages.matchWin(winnerName));
+
+        // Return all players after a short delay
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            for (java.util.UUID uuid : new java.util.HashSet<>(players.keySet())) {
+                Player p = plugin.getServer().getPlayer(uuid);
+                if (p != null) {
+                    // Restore and remove
+                    SavedPlayerState saved = savedStates.remove(uuid);
+                    if (saved != null) {
+                        saved.restore(p);
+                    }
+                }
+            }
+            players.clear();
+            reset();
+        }, 100L); // 5 seconds
     }
 
     /**

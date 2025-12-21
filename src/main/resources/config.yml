@@ -17,7 +17,7 @@ bomb:
 # Round transition
 transition:
   lobby-wait-seconds: 5      # Time in lobby between rounds
-  countdown-seconds: 3       # Countdown before round starts
+  countdown-seconds: 10      # Countdown before first round starts (players can still join)
 
 # Team names
 teams:
