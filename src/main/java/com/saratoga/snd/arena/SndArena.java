@@ -2,9 +2,9 @@ package com.saratoga.snd.arena;
 
 import com.saratoga.snd.Messages;
 import com.saratoga.snd.SearchAndDestroy;
-import com.saratoga.snd.game.Bomb;
 import com.saratoga.snd.game.GameManager;
 import com.saratoga.snd.game.PlayerData;
+import com.saratoga.snd.game.ScoreboardManager;
 import com.saratoga.snd.game.Team;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -28,6 +28,9 @@ public class SndArena {
 
     // Game manager (created when game starts)
     private GameManager gameManager;
+
+    // Scoreboard manager
+    private ScoreboardManager scoreboardManager;
 
     public SndArena(SearchAndDestroy plugin, SndMap map) {
         this.plugin = plugin;
@@ -255,6 +258,11 @@ public class SndArena {
         }
 
         gameManager = new GameManager(this);
+
+        // Create and start scoreboard
+        scoreboardManager = new ScoreboardManager(plugin, this);
+        scoreboardManager.start();
+
         gameManager.startMatch();
     }
 
@@ -281,6 +289,12 @@ public class SndArena {
      * Reset arena to waiting state.
      */
     public void reset() {
+        // Stop scoreboard
+        if (scoreboardManager != null) {
+            scoreboardManager.stop();
+            scoreboardManager = null;
+        }
+
         state = ArenaState.WAITING;
         gameManager = null;
         // Note: players map is cleared via leave()

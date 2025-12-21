@@ -252,28 +252,15 @@ public class GameManager {
             arena.broadcast(Messages.BOMB_DROPPED);
         }
 
-        // Find teammate to spectate
-        List<PlayerData> aliveTeammates = arena.getAlivePlayersOnTeam(data.getTeam());
-        if (!aliveTeammates.isEmpty()) {
-            // Spectate a teammate
-            Player target = aliveTeammates.get(0).getPlayer();
-            if (target != null) {
-                player.setGameMode(GameMode.SPECTATOR);
-                player.setSpectatorTarget(target);
-                data.setSpectatingTarget(target.getUniqueId());
-                Messages.send(player, Messages.nowSpectating(target.getName()));
-            }
-        } else {
-            // No teammates alive - go to lobby in adventure mode (not spectator)
-            player.setGameMode(GameMode.ADVENTURE);
-            Location lobby = arena.getMap().getLobbySpawn();
-            if (lobby != null) {
-                player.teleport(lobby);
-            }
-            Messages.send(player, Messages.PREFIX.append(
-                    net.kyori.adventure.text.Component.text("待機部屋でラウンド終了をお待ちください。",
-                            net.kyori.adventure.text.format.NamedTextColor.GRAY)));
+        // Send to lobby in adventure mode (no spectator)
+        player.setGameMode(GameMode.ADVENTURE);
+        Location lobby = arena.getMap().getLobbySpawn();
+        if (lobby != null) {
+            player.teleport(lobby);
         }
+        Messages.send(player, Messages.PREFIX.append(
+                net.kyori.adventure.text.Component.text("待機部屋でラウンド終了をお待ちください。",
+                        net.kyori.adventure.text.format.NamedTextColor.GRAY)));
 
         // Check for team elimination
         checkTeamElimination();
