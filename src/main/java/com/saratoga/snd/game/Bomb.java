@@ -5,10 +5,13 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.util.UUID;
 
@@ -42,6 +45,11 @@ public class Bomb {
     private String plantedSite; // "A" or "B"
     private int explosionTimer;
     private BukkitTask explosionTask;
+
+    // Planted TNT display
+    private BlockDisplay plantedTntDisplay;
+    private Scoreboard glowScoreboard;
+    private org.bukkit.scoreboard.Team glowTeam;
 
     // Action progress
     private UUID actionPlayer; // Player planting or defusing
@@ -149,6 +157,9 @@ public class Bomb {
         this.carrier = null;
         this.explosionTimer = plugin.getMainConfig().getExplosionTime();
 
+        // Spawn glowing TNT block display
+        spawnPlantedTntDisplay(loc);
+
         // Start explosion countdown
         this.explosionTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             explosionTimer--;
@@ -156,9 +167,46 @@ public class Bomb {
                 explosionTask.cancel();
                 explosionTask = null;
                 this.state = State.EXPLODED;
+                removePlantedTntDisplay();
                 onExplode.run();
             }
         }, 20L, 20L);
+    }
+
+    /**
+     * Spawn a glowing TNT BlockDisplay at the planted location.
+     */
+    private void spawnPlantedTntDisplay(Location loc) {
+        // Remove old one if exists
+        removePlantedTntDisplay();
+
+        // Create BlockDisplay
+        plantedTntDisplay = loc.getWorld().spawn(loc, BlockDisplay.class, display -> {
+            display.setBlock(Material.TNT.createBlockData());
+            display.setGlowing(true);
+            display.setGlowColorOverride(org.bukkit.Color.RED);
+        });
+
+        // Set up scoreboard team for red glow color
+        glowScoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        glowTeam = glowScoreboard.registerNewTeam("plantedBomb");
+        glowTeam.color(NamedTextColor.RED);
+        glowTeam.addEntity(plantedTntDisplay);
+    }
+
+    /**
+     * Remove the planted TNT display.
+     */
+    private void removePlantedTntDisplay() {
+        if (plantedTntDisplay != null && !plantedTntDisplay.isDead()) {
+            plantedTntDisplay.remove();
+            plantedTntDisplay = null;
+        }
+        if (glowTeam != null) {
+            glowTeam.unregister();
+            glowTeam = null;
+        }
+        glowScoreboard = null;
     }
 
     /**
@@ -252,6 +300,7 @@ public class Bomb {
     public void cleanup() {
         cancelAction();
         cancelExplosion();
+        removePlantedTntDisplay();
         if (droppedItem != null) {
             droppedItem.remove();
             droppedItem = null;

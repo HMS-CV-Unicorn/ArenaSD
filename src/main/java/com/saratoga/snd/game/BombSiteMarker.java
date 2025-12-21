@@ -9,6 +9,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.scoreboard.Scoreboard;
 
@@ -67,12 +68,36 @@ public class BombSiteMarker {
             Location loc = site.center().clone();
             loc.add(0, 1.5, 0); // Raise to be visible
 
+            // IMPORTANT: Remove any existing armor stands at this location first
+            // This cleans up any leftover markers from previous games/rounds
+            cleanupExistingMarkers(loc);
+
             ArmorStand marker = spawnMarker(loc, siteName, false);
             markers.put(siteName, marker);
 
             // Add to glow team for colored glow
             org.bukkit.scoreboard.Team team = siteName.equalsIgnoreCase("A") ? glowTeamA : glowTeamB;
             team.addEntity(marker);
+        }
+    }
+
+    /**
+     * Remove any existing invisible armor stands near the given location.
+     * This ensures no leftover markers from previous games.
+     */
+    private void cleanupExistingMarkers(Location location) {
+        if (location.getWorld() == null)
+            return;
+
+        // Search for armor stands within 1 block radius
+        for (Entity entity : location.getWorld().getNearbyEntities(location, 1, 2, 1)) {
+            if (entity instanceof ArmorStand stand) {
+                // Only remove invisible armor stands (our markers)
+                if (!stand.isVisible() && stand.isCustomNameVisible()) {
+                    plugin.getLogger().info("[BombSiteMarker] Cleaning up old marker: " + stand.getName());
+                    stand.remove();
+                }
+            }
         }
     }
 
@@ -115,29 +140,60 @@ public class BombSiteMarker {
     }
 
     /**
-     * Mark a site as planted (highlight it and remove other sites).
+     * Mark a site as planted - removes non-planted site markers and updates
+     * the planted site marker to show bomb icon with red glow.
      */
     public void setPlantedSite(String siteName) {
-        // Remove all non-planted site markers
-        for (var entry : new HashMap<>(markers).entrySet()) {
-            String name = entry.getKey();
+        plugin.getLogger().info("[BombSiteMarker] setPlantedSite called with: " + siteName);
+
+        String plantedSiteKey = null;
+
+        // Find the planted site key (case-insensitive)
+        for (String key : markers.keySet()) {
+            if (key.equalsIgnoreCase(siteName)) {
+                plantedSiteKey = key;
+                break;
+            }
+        }
+
+        // Remove markers for sites that are NOT the planted site
+        var iterator = markers.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            String key = entry.getKey();
             ArmorStand stand = entry.getValue();
 
-            if (!name.equals(siteName)) {
-                // Remove non-planted site
+            if (!key.equalsIgnoreCase(siteName)) {
+                // This is NOT the planted site - remove the marker
                 if (stand != null && !stand.isDead()) {
+                    plugin.getLogger().info("[BombSiteMarker] Removing non-planted marker: " + key);
                     stand.remove();
                 }
-                markers.remove(name);
-            } else {
-                // Update planted site
-                updateMarkerName(stand, name, true);
-
-                // Change glow color to red
-                glowTeamA.removeEntity(stand);
-                glowTeamB.removeEntity(stand);
-                glowTeamPlanted.addEntity(stand);
+                iterator.remove();
             }
+        }
+
+        // Update the planted site marker
+        if (plantedSiteKey != null) {
+            ArmorStand plantedMarker = markers.get(plantedSiteKey);
+            if (plantedMarker != null && !plantedMarker.isDead()) {
+                plugin.getLogger().info("[BombSiteMarker] Updating marker for planted site: " + plantedSiteKey);
+
+                // Update the name to show bomb icon
+                updateMarkerName(plantedMarker, plantedSiteKey, true);
+
+                // Change glow team to red (planted)
+                glowTeamA.removeEntity(plantedMarker);
+                glowTeamB.removeEntity(plantedMarker);
+                glowTeamPlanted.addEntity(plantedMarker);
+
+                plugin.getLogger().info("[BombSiteMarker] Updated planted marker at: " + plantedMarker.getLocation());
+            } else {
+                plugin.getLogger()
+                        .warning("[BombSiteMarker] Planted marker was null or dead for site: " + plantedSiteKey);
+            }
+        } else {
+            plugin.getLogger().warning("[BombSiteMarker] Could not find marker for site: " + siteName);
         }
     }
 
@@ -145,8 +201,11 @@ public class BombSiteMarker {
      * Remove all markers.
      */
     public void removeMarkers() {
+        plugin.getLogger().info("[BombSiteMarker] removeMarkers called, removing " + markers.size() + " markers");
         for (ArmorStand stand : markers.values()) {
             if (stand != null && !stand.isDead()) {
+                plugin.getLogger()
+                        .info("[BombSiteMarker] Removing marker: " + stand.getName() + " at " + stand.getLocation());
                 stand.remove();
             }
         }

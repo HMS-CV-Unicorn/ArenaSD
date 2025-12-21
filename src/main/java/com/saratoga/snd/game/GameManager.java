@@ -124,10 +124,13 @@ public class GameManager {
             // Spawn bomb
             spawnBomb();
 
-            // Spawn site markers
-            if (siteMarker == null) {
-                siteMarker = new BombSiteMarker(plugin, arena);
+            // Remove old site markers before creating new ones
+            if (siteMarker != null) {
+                siteMarker.removeMarkers();
             }
+
+            // Spawn site markers (always create new for fresh state)
+            siteMarker = new BombSiteMarker(plugin, arena);
             siteMarker.spawnMarkers();
 
             // Start round timer
