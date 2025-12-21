@@ -65,6 +65,13 @@ public class ProtectionListener implements Listener {
             return;
         }
 
+        // Disable PVP during waiting, countdown, intermission, ending
+        com.saratoga.snd.arena.ArenaState state = victimArena.getState();
+        if (state != com.saratoga.snd.arena.ArenaState.PLAYING) {
+            event.setCancelled(true);
+            return;
+        }
+
         // Check friendly fire
         var victimData = victimArena.getPlayerData(victim);
         var attackerData = attackerArena.getPlayerData(attacker);

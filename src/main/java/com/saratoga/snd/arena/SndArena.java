@@ -192,6 +192,8 @@ public class SndArena {
                 }
             }
             players.clear();
+            // Clear arena manager tracking
+            plugin.getArenaManager().clearArenaPlayers(this);
             reset();
         }, 100L); // 5 seconds
     }

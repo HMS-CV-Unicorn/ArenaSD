@@ -126,9 +126,13 @@ public class BombListener implements Listener {
 
         Role role = game.getRoleForTeam(data.getTeam());
 
-        // Attackers plant bomb
+        // Attackers plant bomb - only if holding bomb item in hand
         if (role == Role.ATTACKERS && data.hasBomb() && !bomb.isPlanted()) {
-            handlePlanting(player, arena, game, bomb, data);
+            // Check if actually holding bomb in main hand
+            ItemStack mainHand = player.getInventory().getItemInMainHand();
+            if (mainHand.getType() == plugin.getMainConfig().getBombItem()) {
+                handlePlanting(player, arena, game, bomb, data);
+            }
         }
         // Defenders defuse bomb
         else if (role == Role.DEFENDERS && bomb.isPlanted()) {

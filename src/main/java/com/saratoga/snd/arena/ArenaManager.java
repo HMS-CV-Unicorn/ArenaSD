@@ -149,6 +149,21 @@ public class ArenaManager {
     }
 
     /**
+     * Remove player from arena tracking (called when game ends).
+     * Does NOT call arena.leave() - player is already removed.
+     */
+    public void removePlayerFromArenaTracking(UUID playerId) {
+        playerArenas.remove(playerId);
+    }
+
+    /**
+     * Remove all players from arena tracking for a specific arena.
+     */
+    public void clearArenaPlayers(SndArena arena) {
+        playerArenas.entrySet().removeIf(entry -> entry.getValue() == arena);
+    }
+
+    /**
      * Shutdown all arenas.
      */
     public void shutdown() {
