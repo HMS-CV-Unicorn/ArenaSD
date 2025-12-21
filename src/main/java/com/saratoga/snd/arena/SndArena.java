@@ -107,6 +107,9 @@ public class SndArena {
         // NOW remove from map
         players.remove(player.getUniqueId());
 
+        // Remove from arena manager tracking
+        plugin.getArenaManager().removePlayerFromArenaTracking(player.getUniqueId());
+
         // Restore player state
         SavedPlayerState saved = savedStates.remove(player.getUniqueId());
         if (saved != null) {
@@ -154,14 +157,31 @@ public class SndArena {
 
     /**
      * Force end the game immediately without delay.
+     * Used when all players have left.
      */
     public void forceEndGame() {
         state = ArenaState.ENDING;
 
-        // Cleanup game manager
+        // Cleanup game manager first (stops timers, removes bomb/markers)
         if (gameManager != null) {
             gameManager.cleanup();
         }
+
+        // Restore any remaining players
+        for (UUID uuid : new HashSet<>(players.keySet())) {
+            Player player = plugin.getServer().getPlayer(uuid);
+            if (player != null) {
+                SavedPlayerState saved = savedStates.remove(uuid);
+                if (saved != null) {
+                    saved.restore(player);
+                }
+            }
+        }
+        players.clear();
+        savedStates.clear();
+
+        // Clear arena manager tracking
+        plugin.getArenaManager().clearArenaPlayers(this);
 
         // Reset immediately
         reset();
