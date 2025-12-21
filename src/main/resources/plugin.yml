@@ -1,12 +1,12 @@
-name: ArenaSD
-version: '${version}'
-main: com.saratoga.arenaSD.ArenaSD
+name: SearchAndDestroy
+version: ${version}
+main: com.saratoga.snd.SearchAndDestroy
 api-version: '1.21'
-description: Search and Destroy (Bomb) game mode for BattleArena
 author: Saratoga
-depend:
-  - BattleArena
+description: Standalone Search and Destroy (Bomb Defusal) game mode
+
 commands:
   snd:
-    description: Search and Destroy game mode commands
+    description: Search and Destroy commands
+    usage: /<command> <subcommand>
     aliases: [searchanddestroy, bomb]

@@ -1,17 +1,25 @@
-# ArenaSD - Search and Destroy Configuration
-
-# Time settings (use format: 5s, 45s, 2m etc.)
-plant-time: 5s
-detonation-time: 45s
-defuse-time: 45s
-round-time: 120s
+# Search and Destroy Configuration
 
 # Round settings
-rounds-to-win: 4
-swap-sides-after: 3
+rounds:
+  max: 12                    # Maximum rounds per match
+  rounds-to-win: 7           # Rounds needed to win
+  swap-sides-after: 6        # Swap attackers/defenders after this round
+  time-limit-seconds: 120    # Time limit per round (2 minutes)
 
-# Bomb spawn mode: DROP (on ground at spawn) or RANDOM_PLAYER (random attacker)
-bomb-spawn-mode: DROP
+# Bomb settings
+bomb:
+  plant-time-seconds: 3      # Time to plant bomb
+  defuse-time-seconds: 5     # Time to defuse bomb
+  explosion-time-seconds: 40 # Time until bomb explodes after plant
+  item: TNT                  # Item representing the bomb
 
-# Bomb item type
-bomb-item: TNT
+# Round transition
+transition:
+  lobby-wait-seconds: 5      # Time in lobby between rounds
+  countdown-seconds: 3       # Countdown before round starts
+
+# Team names
+teams:
+  red: "Red Team"
+  blue: "Blue Team"
