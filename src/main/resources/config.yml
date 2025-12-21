@@ -1,0 +1,17 @@
+# ArenaSD - Search and Destroy Configuration
+
+# Time settings (use format: 5s, 45s, 2m etc.)
+plant-time: 5s
+detonation-time: 45s
+defuse-time: 45s
+round-time: 120s
+
+# Round settings
+rounds-to-win: 4
+swap-sides-after: 3
+
+# Bomb spawn mode: DROP (on ground at spawn) or RANDOM_PLAYER (random attacker)
+bomb-spawn-mode: DROP
+
+# Bomb item type
+bomb-item: TNT

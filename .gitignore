@@ -117,3 +117,10 @@ runs/
 
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
+
+
+# 参考コード
+ArenaCTF/
+BombArena/
+RoseArena/
+
