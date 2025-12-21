@@ -1,6 +1,8 @@
 package com.saratoga.arenaSD.arena;
 
+import com.saratoga.arenaSD.SdExecutor;
 import org.battleplugins.arena.Arena;
+import org.battleplugins.arena.command.ArenaCommandExecutor;
 import org.battleplugins.arena.competition.map.MapFactory;
 import org.battleplugins.arena.competition.phase.CompetitionPhaseType;
 import org.battleplugins.arena.event.ArenaEventHandler;
@@ -14,6 +16,11 @@ import org.battleplugins.arena.event.player.ArenaLeaveEvent;
  * Handles lifecycle events and delegates to SdCompetition.
  */
 public class SdArena extends Arena {
+
+    @Override
+    public ArenaCommandExecutor createCommandExecutor() {
+        return new SdExecutor(this);
+    }
 
     @Override
     public MapFactory getMapFactory() {
