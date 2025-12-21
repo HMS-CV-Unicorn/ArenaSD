@@ -1,8 +1,12 @@
 package com.saratoga.snd.game;
 
 import com.saratoga.snd.SearchAndDestroy;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -110,13 +114,24 @@ public class Bomb {
     public void startPlanting(UUID playerId, Runnable onComplete) {
         this.state = State.PLANTING;
         this.actionPlayer = playerId;
-        this.actionProgress = plugin.getMainConfig().getPlantTime() * 20; // Convert to ticks
+        int totalTicks = plugin.getMainConfig().getPlantTime() * 20;
+        this.actionProgress = totalTicks;
 
         this.actionTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             actionProgress--;
+
+            // Show progress bar to player
+            Player player = Bukkit.getPlayer(actionPlayer);
+            if (player != null) {
+                player.sendActionBar(createProgressBar("爆弾設置中", actionProgress, totalTicks, NamedTextColor.RED));
+            }
+
             if (actionProgress <= 0) {
                 actionTask.cancel();
                 actionTask = null;
+                if (player != null) {
+                    player.sendActionBar(Component.text("設置完了！", NamedTextColor.GOLD));
+                }
                 onComplete.run();
             }
         }, 0L, 1L);
@@ -152,16 +167,45 @@ public class Bomb {
     public void startDefusing(UUID playerId, Runnable onComplete) {
         this.state = State.DEFUSING;
         this.actionPlayer = playerId;
-        this.actionProgress = plugin.getMainConfig().getDefuseTime() * 20;
+        int totalTicks = plugin.getMainConfig().getDefuseTime() * 20;
+        this.actionProgress = totalTicks;
 
         this.actionTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             actionProgress--;
+
+            // Show progress bar to player
+            Player player = Bukkit.getPlayer(actionPlayer);
+            if (player != null) {
+                player.sendActionBar(createProgressBar("爆弾解除中", actionProgress, totalTicks, NamedTextColor.GREEN));
+            }
+
             if (actionProgress <= 0) {
                 actionTask.cancel();
                 actionTask = null;
+                if (player != null) {
+                    player.sendActionBar(Component.text("解除完了！", NamedTextColor.GREEN));
+                }
                 onComplete.run();
             }
         }, 0L, 1L);
+    }
+
+    /**
+     * Create a progress bar component.
+     */
+    private Component createProgressBar(String label, int remaining, int total, NamedTextColor color) {
+        int barLength = 20;
+        int filled = (int) ((double) (total - remaining) / total * barLength);
+        StringBuilder bar = new StringBuilder();
+        for (int i = 0; i < barLength; i++) {
+            bar.append(i < filled ? "█" : "░");
+        }
+        int percent = (int) ((double) (total - remaining) / total * 100);
+        return Component.text(label + " ", NamedTextColor.WHITE)
+                .append(Component.text("[", NamedTextColor.GRAY))
+                .append(Component.text(bar.toString(), color))
+                .append(Component.text("] ", NamedTextColor.GRAY))
+                .append(Component.text(percent + "%", NamedTextColor.WHITE));
     }
 
     /**

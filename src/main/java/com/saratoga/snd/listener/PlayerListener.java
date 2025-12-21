@@ -41,6 +41,13 @@ public class PlayerListener implements Listener {
         event.setKeepLevel(true);
         event.setDroppedExp(0);
 
+        // Auto respawn after 1 tick to avoid issues
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline() && player.isDead()) {
+                player.spigot().respawn();
+            }
+        }, 1L);
+
         // Notify game manager
         GameManager game = arena.getGameManager();
         if (game != null) {

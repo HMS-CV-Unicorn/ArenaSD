@@ -241,12 +241,15 @@ public class GameManager {
                 Messages.send(player, Messages.nowSpectating(target.getName()));
             }
         } else {
-            // No teammates, go to lobby
-            player.setGameMode(GameMode.SPECTATOR);
+            // No teammates alive - go to lobby in adventure mode (not spectator)
+            player.setGameMode(GameMode.ADVENTURE);
             Location lobby = arena.getMap().getLobbySpawn();
             if (lobby != null) {
                 player.teleport(lobby);
             }
+            Messages.send(player, Messages.PREFIX.append(
+                    net.kyori.adventure.text.Component.text("待機部屋でラウンド終了をお待ちください。",
+                            net.kyori.adventure.text.format.NamedTextColor.GRAY)));
         }
 
         // Check for team elimination
@@ -261,14 +264,67 @@ public class GameManager {
         if (data == null)
             return;
 
+        Team leavingTeam = data.getTeam();
+
         // Drop bomb if carrying
         if (data.hasBomb() && bomb != null) {
             bomb.drop(player.getLocation());
             arena.broadcast(Messages.BOMB_DROPPED);
         }
 
-        // Check for team elimination
-        checkTeamElimination();
+        // Check if team now has zero players (they already left the players map)
+        // We need to check after the player is actually removed
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            checkTeamMembersAfterLeave(leavingTeam);
+        });
+    }
+
+    /**
+     * Check if a team has no members after a player leaves.
+     */
+    private void checkTeamMembersAfterLeave(Team leavingTeam) {
+        if (arena.getState() != ArenaState.PLAYING && arena.getState() != ArenaState.INTERMISSION)
+            return;
+
+        // Count all players on each team (not just alive ones)
+        List<PlayerData> redPlayers = arena.getPlayersOnTeam(Team.RED);
+        List<PlayerData> bluePlayers = arena.getPlayersOnTeam(Team.BLUE);
+
+        if (redPlayers.isEmpty() && bluePlayers.isEmpty()) {
+            // Everyone left - force end game
+            arena.forceEndGame();
+        } else if (redPlayers.isEmpty()) {
+            // Red team has no players - Blue wins the match
+            arena.broadcast(Messages.PREFIX.append(
+                    net.kyori.adventure.text.Component.text(
+                            config.getRedTeamName() + "が退出しました。" + config.getBlueTeamName() + "の勝利！",
+                            net.kyori.adventure.text.format.NamedTextColor.GOLD)));
+            forceEndMatch(Team.BLUE);
+        } else if (bluePlayers.isEmpty()) {
+            // Blue team has no players - Red wins the match
+            arena.broadcast(Messages.PREFIX.append(
+                    net.kyori.adventure.text.Component.text(
+                            config.getBlueTeamName() + "が退出しました。" + config.getRedTeamName() + "の勝利！",
+                            net.kyori.adventure.text.format.NamedTextColor.GOLD)));
+            forceEndMatch(Team.RED);
+        } else {
+            // Both teams still have players - check alive status
+            checkTeamElimination();
+        }
+    }
+
+    /**
+     * Force end the match immediately.
+     */
+    private void forceEndMatch(Team winner) {
+        stopRoundTimer();
+        if (bomb != null) {
+            bomb.cleanup();
+            bomb = null;
+        }
+        String winnerName = winner == Team.RED ? config.getRedTeamName() : config.getBlueTeamName();
+        arena.broadcast(Messages.matchWin(winnerName));
+        arena.endGame();
     }
 
     /**

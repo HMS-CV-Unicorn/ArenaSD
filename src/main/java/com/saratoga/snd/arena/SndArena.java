@@ -2,6 +2,7 @@ package com.saratoga.snd.arena;
 
 import com.saratoga.snd.Messages;
 import com.saratoga.snd.SearchAndDestroy;
+import com.saratoga.snd.game.Bomb;
 import com.saratoga.snd.game.GameManager;
 import com.saratoga.snd.game.PlayerData;
 import com.saratoga.snd.game.Team;
@@ -42,10 +43,11 @@ public class SndArena {
             return false;
         }
 
-        if (state != ArenaState.WAITING && state != ArenaState.INTERMISSION) {
+        // Only allow joining when waiting for players
+        if (state != ArenaState.WAITING) {
             Messages.send(player, Messages.PREFIX.append(
-                    net.kyori.adventure.text.Component.text("試合が進行中です。次のラウンドまでお待ちください。",
-                            net.kyori.adventure.text.format.NamedTextColor.YELLOW)));
+                    net.kyori.adventure.text.Component.text("試合が進行中です。終了までお待ちください。",
+                            net.kyori.adventure.text.format.NamedTextColor.RED)));
             return false;
         }
 
@@ -96,8 +98,8 @@ public class SndArena {
             saved.restore(player);
         }
 
-        // Notify game manager
-        if (gameManager != null) {
+        // Notify game manager (if game is active)
+        if (gameManager != null && (state == ArenaState.PLAYING || state == ArenaState.INTERMISSION)) {
             gameManager.onPlayerLeave(player);
         }
 
@@ -105,10 +107,28 @@ public class SndArena {
                 net.kyori.adventure.text.Component.text(player.getName() + " が退出しました",
                         net.kyori.adventure.text.format.NamedTextColor.YELLOW)));
 
-        // Check if game should end
-        if (players.isEmpty()) {
-            reset();
+        // Check if game should end - no players left
+        if (players.isEmpty() && state != ArenaState.WAITING && state != ArenaState.ENDING) {
+            forceEndGame();
         }
+    }
+
+    /**
+     * Force end the game immediately without delay.
+     */
+    public void forceEndGame() {
+        state = ArenaState.ENDING;
+
+        // Cleanup game manager
+        if (gameManager != null) {
+            Bomb bomb = gameManager.getBomb();
+            if (bomb != null) {
+                bomb.cleanup();
+            }
+        }
+
+        // Reset immediately
+        reset();
     }
 
     /**
