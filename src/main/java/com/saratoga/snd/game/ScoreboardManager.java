@@ -182,11 +182,17 @@ public class ScoreboardManager {
         if (bomb != null) {
             Bomb.State bombState = bomb.getState();
             String bombStatus;
+
             switch (bombState) {
                 case DROPPED -> bombStatus = "§6落ちている";
                 case CARRIED -> {
-                    Player carrier = Bukkit.getPlayer(bomb.getCarrier());
-                    bombStatus = "§e所持: " + (carrier != null ? carrier.getName() : "???");
+                    // Only show carrier name to attackers
+                    if (role == Role.ATTACKERS) {
+                        Player carrier = Bukkit.getPlayer(bomb.getCarrier());
+                        bombStatus = "§e所持: " + (carrier != null ? carrier.getName() : "???");
+                    } else {
+                        bombStatus = "§e攻撃側が所持";
+                    }
                 }
                 case PLANTING -> bombStatus = "§c設置中...";
                 case PLANTED, DEFUSING -> {

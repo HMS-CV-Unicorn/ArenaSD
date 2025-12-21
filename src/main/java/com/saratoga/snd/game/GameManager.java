@@ -33,6 +33,9 @@ public class GameManager {
     // Bomb
     private Bomb bomb;
 
+    // Bomb site markers
+    private BombSiteMarker siteMarker;
+
     // Round timer
     private int roundTimeRemaining;
     private BukkitTask roundTimerTask;
@@ -63,6 +66,10 @@ public class GameManager {
         if (bomb != null) {
             bomb.cleanup();
             bomb = null;
+        }
+        if (siteMarker != null) {
+            siteMarker.removeMarkers();
+            siteMarker = null;
         }
     }
 
@@ -116,6 +123,12 @@ public class GameManager {
 
             // Spawn bomb
             spawnBomb();
+
+            // Spawn site markers
+            if (siteMarker == null) {
+                siteMarker = new BombSiteMarker(plugin, arena);
+            }
+            siteMarker.spawnMarkers();
 
             // Start round timer
             startRoundTimer();
@@ -194,6 +207,11 @@ public class GameManager {
         if (bomb != null) {
             bomb.cleanup();
             bomb = null;
+        }
+
+        // Remove site markers
+        if (siteMarker != null) {
+            siteMarker.removeMarkers();
         }
 
         // Add score
@@ -382,6 +400,11 @@ public class GameManager {
         // Stop round timer - bomb timer takes over
         stopRoundTimer();
 
+        // Highlight planted site
+        if (siteMarker != null) {
+            siteMarker.setPlantedSite(siteName);
+        }
+
         bomb.plant(siteName, location, () -> {
             // Bomb exploded
             arena.broadcast(Messages.BOMB_EXPLODED);
@@ -395,6 +418,7 @@ public class GameManager {
     public void onBombDefused() {
         arena.broadcast(Messages.BOMB_DEFUSED);
         bomb.defuse();
+
         endRound(getDefendingTeam());
     }
 
