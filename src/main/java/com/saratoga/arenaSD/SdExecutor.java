@@ -18,6 +18,17 @@ public class SdExecutor extends ArenaCommandExecutor {
         super(arena);
     }
 
+    // ===== Basic test command (no map required) =====
+    @ArenaCommand(commands = "test", description = "Test command to verify executor works.", permissionNode = "test")
+    public void test(Player player) {
+        player.sendMessage("§a[ArenaSD] コマンド動作確認中...  Executor is working");
+        player.sendMessage("§7利用可能な設定コマンド:");
+        player.sendMessage("§e  /snd bomb spawn <map>  §7- 爆弾スポーン位置");
+        player.sendMessage("§e  /snd site a <map>      §7- サイトA位置");
+        player.sendMessage("§e  /snd site b <map>      §7- サイトB位置");
+        player.sendMessage("§e  /snd info <map>        §7- マップ情報");
+    }
+
     @ArenaCommand(commands = "bomb", subCommands = "spawn", description = "Sets the bomb spawn location.", permissionNode = "bomb.spawn")
     public void setBombSpawn(Player player, CompetitionMap map) {
         if (!(map instanceof SdMap sdMap)) {
