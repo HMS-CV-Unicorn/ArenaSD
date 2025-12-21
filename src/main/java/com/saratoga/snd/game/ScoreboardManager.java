@@ -36,16 +36,58 @@ public class ScoreboardManager {
      * Start updating scoreboards.
      */
     public void start() {
-        // Create scoreboards for all players
+        // Create scoreboards for all players (each with just basic setup)
         for (PlayerData data : arena.getPlayers().values()) {
             Player player = data.getPlayer();
             if (player != null) {
-                createScoreboard(player, data);
+                createScoreboardBasic(player);
             }
         }
 
+        // Now sync ALL players to ALL scoreboards (this ensures everyone can see
+        // everyone)
+        syncAllPlayersToAllScoreboards();
+
         // Update every second
         updateTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateAll, 20L, 20L);
+    }
+
+    /**
+     * Create a basic scoreboard without team assignments.
+     * Sets up team visibility based on THIS player's team.
+     */
+    private void createScoreboardBasic(Player player) {
+        PlayerData playerData = arena.getPlayerData(player);
+        Team playerTeam = playerData != null ? playerData.getTeam() : Team.RED;
+
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        Objective objective = scoreboard.registerNewObjective("snd", Criteria.DUMMY,
+                Component.text("Search & Destroy", NamedTextColor.GOLD, TextDecoration.BOLD));
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        // Set up teams with visibility based on THIS player's team
+        setupTeamsForPlayer(scoreboard, playerTeam);
+
+        playerScoreboards.put(player.getUniqueId(), scoreboard);
+        player.setScoreboard(scoreboard);
+    }
+
+    /**
+     * Sync ALL players to ALL scoreboards.
+     * This ensures every player is on the correct team on every other player's
+     * scoreboard.
+     */
+    private void syncAllPlayersToAllScoreboards() {
+        for (PlayerData data : arena.getPlayers().values()) {
+            Player player = data.getPlayer();
+            if (player == null)
+                continue;
+
+            // Add this player to ALL scoreboards (including their own)
+            for (Scoreboard sb : playerScoreboards.values()) {
+                assignToTeam(player, data.getTeam(), sb);
+            }
+        }
     }
 
     /**
@@ -68,7 +110,7 @@ public class ScoreboardManager {
     }
 
     /**
-     * Create scoreboard for a player.
+     * Create scoreboard for a player (for dynamic adding).
      */
     public void createScoreboard(Player player, PlayerData data) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
@@ -76,8 +118,8 @@ public class ScoreboardManager {
                 Component.text("Search & Destroy", NamedTextColor.GOLD, TextDecoration.BOLD));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        // Set up teams for colored name tags
-        setupTeams(scoreboard);
+        // Set up teams with visibility based on THIS player's team
+        setupTeamsForPlayer(scoreboard, data.getTeam());
 
         playerScoreboards.put(player.getUniqueId(), scoreboard);
         player.setScoreboard(scoreboard);
@@ -94,24 +136,31 @@ public class ScoreboardManager {
     }
 
     /**
-     * Set up teams on scoreboard.
+     * Set up teams on scoreboard with visibility based on the viewing player's
+     * team.
      */
-    private void setupTeams(Scoreboard scoreboard) {
-        Config config = plugin.getMainConfig();
-
+    private void setupTeamsForPlayer(Scoreboard scoreboard, Team viewerTeam) {
         // Red team
         org.bukkit.scoreboard.Team redTeam = scoreboard.registerNewTeam("red");
         redTeam.color(NamedTextColor.RED);
-        redTeam.prefix(Component.text("[R] ", NamedTextColor.RED));
-        redTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
-                org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM);
 
         // Blue team
         org.bukkit.scoreboard.Team blueTeam = scoreboard.registerNewTeam("blue");
         blueTeam.color(NamedTextColor.BLUE);
-        blueTeam.prefix(Component.text("[B] ", NamedTextColor.BLUE));
-        blueTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
-                org.bukkit.scoreboard.Team.OptionStatus.FOR_OWN_TEAM);
+
+        // Set visibility based on viewer's team
+        // Own team: ALWAYS visible, Enemy team: NEVER visible
+        if (viewerTeam == Team.RED) {
+            redTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
+                    org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+            blueTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
+                    org.bukkit.scoreboard.Team.OptionStatus.NEVER);
+        } else {
+            blueTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
+                    org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+            redTeam.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
+                    org.bukkit.scoreboard.Team.OptionStatus.NEVER);
+        }
     }
 
     /**
@@ -224,22 +273,39 @@ public class ScoreboardManager {
 
     /**
      * Add player to scoreboards.
+     * This creates their scoreboard and adds them to all other players'
+     * scoreboards.
      */
     public void addPlayer(Player player, PlayerData data) {
-        createScoreboard(player, data);
-
-        // Add this player to all other scoreboards
+        // First, add this player to all EXISTING scoreboards (before creating their
+        // own)
         for (Map.Entry<UUID, Scoreboard> entry : playerScoreboards.entrySet()) {
-            if (!entry.getKey().equals(player.getUniqueId())) {
-                assignToTeam(player, data.getTeam(), entry.getValue());
-            }
+            assignToTeam(player, data.getTeam(), entry.getValue());
         }
+
+        // Now create scoreboard for this player
+        createScoreboard(player, data);
     }
 
     /**
-     * Remove player from scoreboards.
+     * Remove player from ALL scoreboards.
      */
     public void removePlayer(Player player) {
+        // Remove from all other players' scoreboards
+        for (Map.Entry<UUID, Scoreboard> entry : playerScoreboards.entrySet()) {
+            Scoreboard sb = entry.getValue();
+
+            // Remove from both teams (we don't know which they were on)
+            org.bukkit.scoreboard.Team redTeam = sb.getTeam("red");
+            org.bukkit.scoreboard.Team blueTeam = sb.getTeam("blue");
+
+            if (redTeam != null)
+                redTeam.removePlayer(player);
+            if (blueTeam != null)
+                blueTeam.removePlayer(player);
+        }
+
+        // Remove their own scoreboard
         Scoreboard sb = playerScoreboards.remove(player.getUniqueId());
         if (sb != null) {
             player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
