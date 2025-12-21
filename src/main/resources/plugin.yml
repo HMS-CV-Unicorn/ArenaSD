@@ -1,0 +1,4 @@
+name: ArenaSD
+version: '0.1-alpha'
+main: com.saratoga.arenaSD.ArenaSD
+api-version: '1.21'
