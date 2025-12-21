@@ -272,15 +272,28 @@ public class SndArena {
     public void endGame() {
         state = ArenaState.ENDING;
 
-        // Return all players to lobby after a delay
+        // Cleanup game manager
+        if (gameManager != null) {
+            gameManager.cleanup();
+        }
+
+        // Return all players to their saved location after a delay
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            // Kick all players (restore their state)
+            // Restore all players (don't use leave() as it broadcasts messages)
             for (UUID uuid : new HashSet<>(players.keySet())) {
                 Player player = plugin.getServer().getPlayer(uuid);
                 if (player != null) {
-                    leave(player);
+                    SavedPlayerState saved = savedStates.remove(uuid);
+                    if (saved != null) {
+                        saved.restore(player);
+                    }
                 }
             }
+            players.clear();
+
+            // Clear arena manager tracking - THIS WAS MISSING
+            plugin.getArenaManager().clearArenaPlayers(this);
+
             reset();
         }, 100L); // 5 seconds
     }
