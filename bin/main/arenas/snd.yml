@@ -1,0 +1,108 @@
+name: SND
+aliases: [searchanddestroy, bomb]
+type: Match
+team-options:
+  named-teams: true
+  team-size: 2-5
+  team-amount: 2
+  team-selection: pick
+  shared-spawn-points: true
+modules:
+  - arena-restoration
+  - scoreboards
+  - team-colors
+lives:
+  enabled: true
+  amount: 1
+victory-conditions:
+  teams-alive:
+    amount: 1
+events:
+  on-join:
+    - store{types=all}
+    - change-gamemode{gamemode=adventure}
+    - flight{enabled=false}
+    - teleport{location=waitroom}
+  on-spectate:
+    - store{types=all}
+    - change-gamemode{gamemode=spectator}
+    - flight{enabled=true}
+    - teleport{location=spectator}
+  on-leave:
+    - clear-effects
+    - restore{types=all}
+    - remove-scoreboard
+  on-death:
+    - change-role{role=spectating}
+options:
+  - block-break{enabled=false}
+  - block-place{enabled=false}
+  - block-interact{enabled=true}
+  - damage-entities{option=never}
+  - keep-inventory{enabled=true}
+  - keep-experience{enabled=true}
+  - team-selection{enabled=true}
+initial-phase: waiting
+phases:
+  waiting:
+    allow-join: true
+    next-phase: countdown
+    options:
+      - damage-players{option=never}
+    events:
+      on-start:
+        - apply-scoreboard{scoreboard=waiting}
+      on-join:
+        - apply-scoreboard{scoreboard=waiting}
+  countdown:
+    allow-join: true
+    allow-spectate: true
+    revert-phase: true
+    next-phase: ingame
+    countdown-time: 10
+    options:
+      - damage-players{option=never}
+    events:
+      on-start:
+        - apply-scoreboard{scoreboard=countdown}
+      on-join:
+        - apply-scoreboard{scoreboard=countdown}
+      on-complete:
+        - join-random-team
+        - teleport{location=team_spawn}
+        - play-sound{sound=block.note_block.pling;pitch=2;volume=1}
+  ingame:
+    allow-join: false
+    allow-spectate: true
+    next-phase: victory
+    options:
+      - damage-players{option=other_team}
+      - team-selection{enabled=false}
+    events:
+      on-start:
+        - spawn-bomb
+        - apply-scoreboard{scoreboard=ingame}
+      on-complete:
+        - remove-bomb
+  victory:
+    allow-join: false
+    allow-spectate: false
+    next-phase: waiting
+    duration: 5
+    options:
+      - team-selection{enabled=false}
+    events:
+      on-complete:
+        - clear-effects
+        - leave
+        - restore-arena
+        - remove-scoreboard
+      on-victory:
+        - send-message{message=<green>Your team wins!</green>}
+        - play-sound{sound=entity.player.levelup;pitch=1;volume=1}
+      on-lose:
+        - send-message{message=<red>Your team lost!</red>}
+        - play-sound{sound=block.anvil.place;pitch=0;volume=1}
+      on-draw:
+        - send-message{message=<yellow>It's a draw!</yellow>}
+        - play-sound{sound=block.beacon.deactivate;pitch=0;volume=1}

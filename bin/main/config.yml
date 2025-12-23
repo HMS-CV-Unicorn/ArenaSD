@@ -1,0 +1,25 @@
+# Search and Destroy Configuration
+
+# Round settings
+rounds:
+  max: 12                    # Maximum rounds per match
+  rounds-to-win: 7           # Rounds needed to win
+  swap-sides-after: 6        # Swap attackers/defenders after this round
+  time-limit-seconds: 120    # Time limit per round (2 minutes)
+
+# Bomb settings
+bomb:
+  plant-time-seconds: 3      # Time to plant bomb
+  defuse-time-seconds: 5     # Time to defuse bomb
+  explosion-time-seconds: 40 # Time until bomb explodes after plant
+  item: TNT                  # Item representing the bomb
+
+# Round transition
+transition:
+  lobby-wait-seconds: 5      # Time in lobby between rounds
+  countdown-seconds: 10      # Countdown before first round starts (players can still join)
+
+# Team names
+teams:
+  red: "Red Team"
+  blue: "Blue Team"

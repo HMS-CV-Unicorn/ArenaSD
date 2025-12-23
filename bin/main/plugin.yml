@@ -1,0 +1,12 @@
+name: SearchAndDestroy
+version: ${version}
+main: com.saratoga.snd.SearchAndDestroy
+api-version: '1.21'
+author: Saratoga
+description: Standalone Search and Destroy (Bomb Defusal) game mode
+
+commands:
+  snd:
+    description: Search and Destroy commands
+    usage: /<command> <subcommand>
+    aliases: [searchanddestroy, bomb]
