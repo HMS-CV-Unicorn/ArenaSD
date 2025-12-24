@@ -11,7 +11,9 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manages the game logic for a match.
@@ -40,10 +42,14 @@ public class GameManager {
     private int roundTimeRemaining;
     private BukkitTask roundTimerTask;
 
+    // Event command executor
+    private final EventCommandExecutor eventExecutor;
+
     public GameManager(SndArena arena) {
         this.arena = arena;
         this.plugin = arena.getPlugin();
         this.config = plugin.getMainConfig();
+        this.eventExecutor = new EventCommandExecutor(plugin);
     }
 
     /**
@@ -54,6 +60,9 @@ public class GameManager {
         this.blueScore = 0;
         this.currentRound = 0;
         this.attackingTeam = Team.RED;
+
+        // Execute game-start commands
+        executeEventCommands(config.getGameStartCommands(), null);
 
         startNextRound();
     }
@@ -98,6 +107,9 @@ public class GameManager {
 
         arena.broadcast(Messages.roundStart(currentRound));
         arena.broadcast(Messages.score(redScore, blueScore));
+
+        // Execute round-start commands
+        executeEventCommands(config.getRoundStartCommands(), null);
 
         // Reset all players for new round
         for (PlayerData data : arena.getPlayers().values()) {
@@ -252,6 +264,9 @@ public class GameManager {
     private void endMatch(Team winner) {
         String winnerName = winner == Team.RED ? config.getRedTeamName() : config.getBlueTeamName();
         arena.broadcast(Messages.matchWin(winnerName));
+
+        // Execute game-end commands
+        executeEventCommands(config.getGameEndCommands(), null);
 
         arena.endGame();
     }
@@ -480,5 +495,38 @@ public class GameManager {
 
     public int getRoundTimeRemaining() {
         return roundTimeRemaining;
+    }
+
+    /**
+     * Execute event commands with map placeholder.
+     */
+    private void executeEventCommands(List<String> commands, Player targetPlayer) {
+        if (commands == null || commands.isEmpty())
+            return;
+
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("<map>", arena.getMap().getName());
+        if (targetPlayer != null) {
+            placeholders.put("<player>", targetPlayer.getName());
+        }
+
+        eventExecutor.executeCommands(commands, placeholders, targetPlayer);
+    }
+
+    /**
+     * Execute player-kill commands.
+     */
+    public void executeKillCommands(Player killer, Player victim) {
+        List<String> commands = config.getPlayerKillCommands();
+        if (commands == null || commands.isEmpty())
+            return;
+
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("<map>", arena.getMap().getName());
+        placeholders.put("<killer>", killer.getName());
+        placeholders.put("<victim>", victim.getName());
+        placeholders.put("<player>", killer.getName());
+
+        eventExecutor.executeCommands(commands, placeholders, killer);
     }
 }

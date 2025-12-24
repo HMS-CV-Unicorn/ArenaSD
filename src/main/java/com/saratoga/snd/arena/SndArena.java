@@ -6,6 +6,11 @@ import com.saratoga.snd.game.GameManager;
 import com.saratoga.snd.game.PlayerData;
 import com.saratoga.snd.game.ScoreboardManager;
 import com.saratoga.snd.game.Team;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -81,6 +86,9 @@ public class SndArena {
 
         // Auto-assign team
         assignTeam(data);
+
+        // Broadcast recruitment announcement
+        broadcastServerAnnouncementIfNeeded();
 
         // Check if we can start
         checkStart();
@@ -341,6 +349,35 @@ public class SndArena {
             Player player = plugin.getServer().getPlayer(uuid);
             if (player != null) {
                 player.sendMessage(message);
+            }
+        }
+    }
+
+    /**
+     * Broadcast server-wide announcement when new lobby opens or threshold reached.
+     */
+    private void broadcastServerAnnouncementIfNeeded() {
+        if (!plugin.getMainConfig().isAnnouncementEnabled()) {
+            return;
+        }
+
+        int threshold = plugin.getMainConfig().getAnnouncementThreshold();
+        int playerCount = players.size();
+
+        // Announce on first player or when threshold reached
+        if (playerCount == 1 || (threshold > 0 && playerCount == threshold)) {
+            String message = plugin.getMainConfig().getAnnouncementMessage()
+                    .replace("<map>", map.getName());
+
+            Component announcement = Component.text()
+                    .append(Messages.PREFIX)
+                    .append(LegacyComponentSerializer.legacyAmpersand().deserialize(message))
+                    .clickEvent(ClickEvent.runCommand("/snd join " + map.getName()))
+                    .hoverEvent(HoverEvent.showText(Component.text("クリックして参加", NamedTextColor.GREEN)))
+                    .build();
+
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                p.sendMessage(announcement);
             }
         }
     }

@@ -23,3 +23,25 @@ transition:
 teams:
   red: "Red Team"
   blue: "Blue Team"
+
+# Event triggered commands
+# Prefixes: [console] / [player] / [op]
+# Placeholders: <player>, <map>, <killer>, <victim>
+event-commands:
+  game-start: []
+    # Example: [console] broadcast <map>でSND試合開始！
+  round-start: []
+    # Example: [console] say ラウンド開始
+  game-end: []
+    # Example: [console] broadcast <map>の試合が終了しました
+  player-kill: []
+    # Example: [op] eco give <killer> 100
+
+# Recruitment announcement
+# Broadcast server-wide when lobby opens
+announcement:
+  enabled: true
+  # Placeholders: <map>
+  message: "&6<map>&eでSNDが始まります！&a/snd join&eで参加しよう！"
+  # 0 = announce on first player only, >0 = also announce when threshold reached
+  player-threshold: 0

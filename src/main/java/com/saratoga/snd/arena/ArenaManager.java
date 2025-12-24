@@ -187,4 +187,71 @@ public class ArenaManager {
     public boolean isInArena(Player player) {
         return playerArenas.containsKey(player.getUniqueId());
     }
+
+    /**
+     * Find a WAITING arena that has room for more players.
+     */
+    public SndArena findWaitingArena() {
+        for (SndArena arena : arenas.values()) {
+            if (arena.getState() == ArenaState.WAITING
+                    && arena.getPlayerCount() < arena.getMap().getMaxPlayers()) {
+                return arena;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find an available map (not currently in use or empty WAITING).
+     */
+    public SndMap findAvailableMap() {
+        List<SndMap> availableMaps = new ArrayList<>();
+        for (SndMap map : maps.values()) {
+            if (map.isReady()) {
+                SndArena arena = arenas.get(map.getName().toLowerCase());
+                // Available if no arena exists or arena is in WAITING with 0 players
+                if (arena == null || (arena.getState() == ArenaState.WAITING && arena.getPlayerCount() == 0)) {
+                    availableMaps.add(map);
+                }
+            }
+        }
+        if (availableMaps.isEmpty())
+            return null;
+        // Random selection
+        return availableMaps.get(new Random().nextInt(availableMaps.size()));
+    }
+
+    /**
+     * Auto-join logic: find waiting arena or create new one.
+     */
+    public JoinResult autoJoin(Player player) {
+        // 1. Try to find WAITING arena with players already in it
+        SndArena waitingArena = findWaitingArena();
+        if (waitingArena != null) {
+            if (joinArena(player, waitingArena.getMap().getName())) {
+                return new JoinResult(true, waitingArena.getMap().getName());
+            }
+            // Retry with another WAITING arena (in case first one filled up)
+            waitingArena = findWaitingArena();
+            if (waitingArena != null && joinArena(player, waitingArena.getMap().getName())) {
+                return new JoinResult(true, waitingArena.getMap().getName());
+            }
+        }
+
+        // 2. Create new arena on available map
+        SndMap availableMap = findAvailableMap();
+        if (availableMap != null) {
+            if (joinArena(player, availableMap.getName())) {
+                return new JoinResult(true, availableMap.getName());
+            }
+        }
+
+        return new JoinResult(false, null);
+    }
+
+    /**
+     * Result of an auto-join attempt.
+     */
+    public record JoinResult(boolean success, String mapName) {
+    }
 }

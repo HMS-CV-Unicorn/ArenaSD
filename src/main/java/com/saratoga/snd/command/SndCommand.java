@@ -57,8 +57,8 @@ public class SndCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(Component.text("=== Search and Destroy ===", NamedTextColor.GOLD));
-        sender.sendMessage(Component.text("/snd join <map>", NamedTextColor.YELLOW)
-                .append(Component.text(" - マップに参加", NamedTextColor.GRAY)));
+        sender.sendMessage(Component.text("/snd join [map]", NamedTextColor.YELLOW)
+                .append(Component.text(" - 自動マッチ or マップ指定で参加", NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("/snd leave", NamedTextColor.YELLOW)
                 .append(Component.text(" - 退出", NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("/snd list", NamedTextColor.YELLOW)
@@ -87,26 +87,32 @@ public class SndCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (args.length < 2) {
-            sender.sendMessage(Component.text("使用法: /snd join <map>", NamedTextColor.RED));
+        // Explicit map specified
+        if (args.length >= 2) {
+            String mapName = args[1];
+            SndMap map = plugin.getArenaManager().getMap(mapName);
+            if (map == null) {
+                Messages.send(player, Messages.ARENA_NOT_FOUND);
+                return;
+            }
+            if (!map.isReady()) {
+                Messages.send(player, Messages.ARENA_NOT_READY);
+                return;
+            }
+            if (plugin.getArenaManager().joinArena(player, mapName)) {
+                Messages.send(player, Messages.PREFIX.append(
+                        Component.text(map.getName() + " に参加しました！", NamedTextColor.GREEN)));
+            }
             return;
         }
 
-        String mapName = args[1];
-        SndMap map = plugin.getArenaManager().getMap(mapName);
-        if (map == null) {
-            Messages.send(player, Messages.ARENA_NOT_FOUND);
-            return;
-        }
-
-        if (!map.isReady()) {
-            Messages.send(player, Messages.ARENA_NOT_READY);
-            return;
-        }
-
-        if (plugin.getArenaManager().joinArena(player, mapName)) {
+        // Auto-matchmaking (no map specified)
+        var result = plugin.getArenaManager().autoJoin(player);
+        if (result.success()) {
             Messages.send(player, Messages.PREFIX.append(
-                    Component.text(map.getName() + " に参加しました！", NamedTextColor.GREEN)));
+                    Component.text(result.mapName() + " に参加しました！", NamedTextColor.GREEN)));
+        } else {
+            Messages.send(player, Messages.NO_AVAILABLE_GAMES);
         }
     }
 

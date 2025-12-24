@@ -41,6 +41,13 @@ public class PlayerListener implements Listener {
         event.setKeepLevel(true);
         event.setDroppedExp(0);
 
+        // Execute kill commands if there's a killer
+        Player killer = player.getKiller();
+        GameManager game = arena.getGameManager();
+        if (killer != null && game != null) {
+            game.executeKillCommands(killer, player);
+        }
+
         // Auto respawn after 1 tick to avoid issues
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline() && player.isDead()) {
@@ -49,7 +56,6 @@ public class PlayerListener implements Listener {
         }, 1L);
 
         // Notify game manager
-        GameManager game = arena.getGameManager();
         if (game != null) {
             game.onPlayerDeath(player);
         }
