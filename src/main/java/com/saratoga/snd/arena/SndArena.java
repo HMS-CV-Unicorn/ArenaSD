@@ -81,7 +81,7 @@ public class SndArena {
         // Broadcast join message
         broadcast(Messages.PREFIX.append(
                 net.kyori.adventure.text.Component.text(
-                        player.getName() + " が参加しました (" + players.size() + "/" + map.getMaxPlayers() + ")",
+                        player.getName() + " が参加しました (" + players.size() + "/" + plugin.getMainConfig().getMaxPlayers() + ")",
                         net.kyori.adventure.text.format.NamedTextColor.GREEN)));
 
         // Auto-assign team
@@ -284,7 +284,7 @@ public class SndArena {
     private void checkStart() {
         if (state != ArenaState.WAITING)
             return;
-        if (players.size() >= map.getMinPlayers()) {
+        if (players.size() >= plugin.getMainConfig().getMinPlayers()) {
             startCountdown();
         }
     }
@@ -312,7 +312,7 @@ public class SndArena {
      * Start the game.
      */
     public void startGame() {
-        if (players.size() < map.getMinPlayers()) {
+        if (players.size() < plugin.getMainConfig().getMinPlayers()) {
             state = ArenaState.WAITING;
             broadcast(Messages.PREFIX.append(
                     net.kyori.adventure.text.Component.text("プレイヤー不足のため試合を開始できません。",

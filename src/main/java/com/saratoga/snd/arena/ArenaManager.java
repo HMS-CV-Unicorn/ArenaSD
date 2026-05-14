@@ -210,7 +210,7 @@ public class ArenaManager {
     public SndArena findWaitingArena() {
         for (SndArena arena : arenas.values()) {
             if (arena.getState() == ArenaState.WAITING
-                    && arena.getPlayerCount() < arena.getMap().getMaxPlayers()) {
+                    && arena.getPlayerCount() < plugin.getMainConfig().getMaxPlayers()) {
                 return arena;
             }
         }

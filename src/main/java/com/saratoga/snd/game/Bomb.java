@@ -65,13 +65,10 @@ public class Bomb {
     }
 
     /**
-     * Spawn bomb as dropped item.
+     * Create the bomb item stack.
      */
-    public void spawn(Location location) {
-        this.location = location;
-        this.state = State.DROPPED;
-
-        ItemStack bombStack = new ItemStack(plugin.getMainConfig().getBombItem());
+    public static ItemStack createBombItem(com.saratoga.snd.Config config) {
+        ItemStack bombStack = new ItemStack(config.getBombItem());
         var meta = bombStack.getItemMeta();
         meta.displayName(net.kyori.adventure.text.Component.text("爆弾",
                 net.kyori.adventure.text.format.NamedTextColor.RED,
@@ -80,6 +77,17 @@ public class Bomb {
                 net.kyori.adventure.text.Component.text("爆弾サイトで右クリックで設置",
                         net.kyori.adventure.text.format.NamedTextColor.GRAY)));
         bombStack.setItemMeta(meta);
+        return bombStack;
+    }
+
+    /**
+     * Spawn bomb as dropped item.
+     */
+    public void spawn(Location location) {
+        this.location = location;
+        this.state = State.DROPPED;
+
+        ItemStack bombStack = createBombItem(plugin.getMainConfig());
 
         this.droppedItem = location.getWorld().dropItem(location, bombStack);
         this.droppedItem.setCustomName("§c§l爆弾");
@@ -107,12 +115,7 @@ public class Bomb {
         this.location = loc;
         this.state = State.DROPPED;
 
-        ItemStack bombStack = new ItemStack(plugin.getMainConfig().getBombItem());
-        var meta = bombStack.getItemMeta();
-        meta.displayName(net.kyori.adventure.text.Component.text("爆弾",
-                net.kyori.adventure.text.format.NamedTextColor.RED,
-                net.kyori.adventure.text.format.TextDecoration.BOLD));
-        bombStack.setItemMeta(meta);
+        ItemStack bombStack = createBombItem(plugin.getMainConfig());
 
         this.droppedItem = loc.getWorld().dropItem(loc, bombStack);
         this.droppedItem.setCustomName("§c§l爆弾");
@@ -136,6 +139,10 @@ public class Bomb {
             Player player = Bukkit.getPlayer(actionPlayer);
             if (player != null) {
                 player.sendActionBar(createProgressBar("爆弾設置中", actionProgress, totalTicks, NamedTextColor.RED));
+                // Play sound every 10 ticks (0.5 seconds)
+                if (actionProgress % 10 == 0) {
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_STONE_PLACE, 1.0f, 1.0f);
+                }
             }
 
             if (actionProgress <= 0) {
@@ -176,6 +183,7 @@ public class Bomb {
                 explosionTask = null;
                 this.state = State.EXPLODED;
                 removePlantedTntDisplay();
+                triggerMassiveExplosion();
                 onExplode.run();
             }
         }, 20L, 20L);
@@ -233,6 +241,10 @@ public class Bomb {
             Player player = Bukkit.getPlayer(actionPlayer);
             if (player != null) {
                 player.sendActionBar(createProgressBar("爆弾解除中", actionProgress, totalTicks, NamedTextColor.GREEN));
+                // Play sound every 10 ticks (0.5 seconds)
+                if (actionProgress % 10 == 0) {
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1.0f, 1.0f);
+                }
             }
 
             if (actionProgress <= 0) {
@@ -320,6 +332,30 @@ public class Bomb {
             Player p = pd.getPlayer();
             if (p != null && p.isOnline()) {
                 p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, pitch);
+            }
+        }
+    }
+
+    /**
+     * Trigger massive explosion effect and radius damage.
+     * Does not break blocks.
+     */
+    private void triggerMassiveExplosion() {
+        org.bukkit.World world = location.getWorld();
+        if (world == null) return;
+
+        // Visual and sound effects
+        world.spawnParticle(org.bukkit.Particle.EXPLOSION_EMITTER, location, 1);
+        world.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 10.0f, 0.5f);
+
+        // Insta-kill players within 20 block radius
+        double radiusSquared = 20.0 * 20.0;
+        for (com.saratoga.snd.game.PlayerData pd : arena.getPlayers().values()) {
+            Player p = pd.getPlayer();
+            if (p != null && p.isOnline() && pd.isAlive()) {
+                if (p.getWorld().equals(world) && p.getLocation().distanceSquared(location) <= radiusSquared) {
+                    p.damage(1000.0); // Insta-kill
+                }
             }
         }
     }

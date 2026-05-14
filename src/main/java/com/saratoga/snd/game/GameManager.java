@@ -179,6 +179,27 @@ public class GameManager {
         roundTimerTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             roundTimeRemaining--;
 
+            // Failsafe: Bomb re-equip for loadout plugin inventory clears
+            if (bomb != null && bomb.getState() == Bomb.State.CARRIED && bomb.getCarrier() != null) {
+                Player carrier = org.bukkit.Bukkit.getPlayer(bomb.getCarrier());
+                if (carrier != null && carrier.isOnline()) {
+                    PlayerData pd = arena.getPlayerData(carrier);
+                    if (pd != null && pd.isAlive() && pd.hasBomb()) {
+                        org.bukkit.Material bombMaterial = plugin.getMainConfig().getBombItem();
+                        boolean found = false;
+                        for (org.bukkit.inventory.ItemStack item : carrier.getInventory().getContents()) {
+                            if (item != null && item.getType() == bombMaterial) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            carrier.getInventory().addItem(Bomb.createBombItem(plugin.getMainConfig()));
+                        }
+                    }
+                }
+            }
+
             // Time announcements
             if (roundTimeRemaining == 30 || roundTimeRemaining == 10 || roundTimeRemaining <= 5) {
                 arena.broadcast(Messages.timeRemaining(roundTimeRemaining));

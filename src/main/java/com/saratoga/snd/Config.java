@@ -46,6 +46,10 @@ public class Config {
     private String announcementMessage;
     private int announcementThreshold;
 
+    // Match settings
+    private int minPlayers;
+    private int maxPlayers;
+
     public Config(SearchAndDestroy plugin) {
         this.plugin = plugin;
         reload();
@@ -101,6 +105,10 @@ public class Config {
         this.announcementMessage = config.getString("announcement.message",
                 "&6<map>&eでSNDが始まります！&a/snd join&eで参加しよう！");
         this.announcementThreshold = config.getInt("announcement.player-threshold", 0);
+
+        // Match settings
+        this.minPlayers = config.getInt("match.min-players", 2);
+        this.maxPlayers = config.getInt("match.max-players", 10);
     }
 
     public int getMaxRounds() {
@@ -191,5 +199,14 @@ public class Config {
 
     public int getAnnouncementThreshold() {
         return announcementThreshold;
+    }
+
+    // Match getters
+    public int getMinPlayers() {
+        return minPlayers;
+    }
+
+    public int getMaxPlayers() {
+        return maxPlayers;
     }
 }

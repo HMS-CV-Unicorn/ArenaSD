@@ -7,6 +7,11 @@ rounds:
   swap-sides-after: 6        # Swap attackers/defenders after this round
   time-limit-seconds: 120    # Time limit per round (2 minutes)
 
+# Match settings
+match:
+  min-players: 2             # Minimum players required to start match
+  max-players: 10            # Maximum players allowed in a match
+
 # Bomb settings
 bomb:
   plant-time-seconds: 3      # Time to plant bomb
