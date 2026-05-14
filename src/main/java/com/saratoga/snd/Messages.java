@@ -54,6 +54,9 @@ public final class Messages {
                 return PREFIX.append(Component.text(team + " が試合に勝利！", NamedTextColor.GOLD, TextDecoration.BOLD));
         }
 
+        public static final Component MATCH_DRAW = PREFIX.append(
+                        Component.text("試合が引き分けになりました。", NamedTextColor.YELLOW, TextDecoration.BOLD));
+
         public static Component score(int red, int blue) {
                 return Component.text("スコア: ", NamedTextColor.WHITE)
                                 .append(Component.text("RED " + red, NamedTextColor.RED))

@@ -301,6 +301,12 @@ public class SndCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
+        // Force end all active games as draw before reloading
+        int endedGames = plugin.getArenaManager().forceEndAllGames();
+        if (endedGames > 0) {
+            sender.sendMessage(Component.text(endedGames + " 件の試合を引き分けとして強制終了しました。", NamedTextColor.YELLOW));
+        }
+
         plugin.getMainConfig().reload();
         plugin.getArenaManager().loadMaps();
         sender.sendMessage(Component.text("設定をリロードしました。", NamedTextColor.GREEN));

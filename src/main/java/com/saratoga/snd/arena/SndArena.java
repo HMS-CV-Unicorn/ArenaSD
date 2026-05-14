@@ -230,6 +230,41 @@ public class SndArena {
     }
 
     /**
+     * Force end the game as a draw (used during reload).
+     * Immediately restores all players without delay.
+     */
+    public void forceEndGameAsDraw() {
+        state = ArenaState.ENDING;
+
+        broadcast(Messages.MATCH_DRAW);
+
+        // Execute team-draw commands if game manager exists
+        if (gameManager != null) {
+            gameManager.executeDrawCommands();
+            gameManager.cleanup();
+        }
+
+        // Restore all players immediately (no delay for reload)
+        for (UUID uuid : new HashSet<>(players.keySet())) {
+            Player player = plugin.getServer().getPlayer(uuid);
+            if (player != null) {
+                SavedPlayerState saved = savedStates.remove(uuid);
+                if (saved != null) {
+                    saved.restore(player);
+                }
+            }
+        }
+        players.clear();
+        savedStates.clear();
+
+        // Clear arena manager tracking
+        plugin.getArenaManager().clearArenaPlayers(this);
+
+        // Reset immediately
+        reset();
+    }
+
+    /**
      * Assign player to a team (balances teams).
      */
     private void assignTeam(PlayerData data) {

@@ -549,6 +549,18 @@ public class GameManager {
     }
 
     /**
+     * Execute team-draw commands for all players.
+     * Called from SndArena.forceEndGameAsDraw().
+     */
+    public void executeDrawCommands() {
+        List<String> commands = config.getTeamDrawCommands();
+        if (commands == null || commands.isEmpty())
+            return;
+
+        executeEventCommandsForAll(commands);
+    }
+
+    /**
      * Execute player-kill commands.
      */
     public void executeKillCommands(Player killer, Player victim) {

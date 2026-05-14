@@ -168,10 +168,26 @@ public class ArenaManager {
      */
     public void shutdown() {
         for (SndArena arena : arenas.values()) {
-            arena.endGame();
+            arena.forceEndGame();
         }
         arenas.clear();
         playerArenas.clear();
+    }
+
+    /**
+     * Force end all active games as a draw (used during reload).
+     * Returns the number of games that were forcefully ended.
+     */
+    public int forceEndAllGames() {
+        int count = 0;
+        for (SndArena arena : new java.util.ArrayList<>(arenas.values())) {
+            if (arena.getState() != ArenaState.WAITING) {
+                arena.forceEndGameAsDraw();
+                count++;
+            }
+        }
+        arenas.clear();
+        return count;
     }
 
     /**

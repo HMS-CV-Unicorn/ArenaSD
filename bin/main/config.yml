@@ -51,6 +51,11 @@ event-commands:
   team-lose: []
     # Example:
     # - "[console] eco give <player> 200"
+  # Commands for draw (runs for each player)
+  # Placeholders: <player>, <map>
+  team-draw: []
+    # Example:
+    # - "[console] eco give <player> 500"
 
 # Recruitment announcement
 # Broadcast server-wide when lobby opens

@@ -3,6 +3,7 @@ package com.saratoga.snd.game;
 import com.saratoga.snd.SearchAndDestroy;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.slf4j.Logger;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,9 +15,11 @@ import java.util.Map;
 public class EventCommandExecutor {
 
     private final SearchAndDestroy plugin;
+    private final Logger logger;
 
     public EventCommandExecutor(SearchAndDestroy plugin) {
         this.plugin = plugin;
+        this.logger = plugin.getSLF4JLogger();
     }
 
     /**
@@ -109,19 +112,27 @@ public class EventCommandExecutor {
     private void executeCommand(String command, Player targetPlayer) {
         if (command.startsWith("[console] ")) {
             String cmd = command.substring(10);
+            logger.info("[EventCmd] Executing console command: {}", cmd);
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
         } else if (command.startsWith("[player] ")) {
             String cmd = command.substring(9);
             if (targetPlayer != null && targetPlayer.isOnline()) {
+                logger.info("[EventCmd] Player {} executing: {}", targetPlayer.getName(), cmd);
                 targetPlayer.performCommand(cmd);
+            } else {
+                logger.warn("[EventCmd] Skipped [player] command (no target): {}", cmd);
             }
         } else if (command.startsWith("[op] ")) {
             String cmd = command.substring(5);
             if (targetPlayer != null && targetPlayer.isOnline()) {
+                logger.info("[EventCmd] Player {} executing as OP: {}", targetPlayer.getName(), cmd);
                 executeAsOp(targetPlayer, cmd);
+            } else {
+                logger.warn("[EventCmd] Skipped [op] command (no target): {}", cmd);
             }
         } else {
             // Default: console execution
+            logger.info("[EventCmd] Executing (no prefix) as console: {}", command);
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
         }
     }

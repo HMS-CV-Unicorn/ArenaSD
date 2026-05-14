@@ -39,6 +39,7 @@ public class Config {
     private List<String> playerKillCommands;
     private List<String> teamWinCommands;
     private List<String> teamLoseCommands;
+    private List<String> teamDrawCommands;
 
     // Announcement settings
     private boolean announcementEnabled;
@@ -83,6 +84,17 @@ public class Config {
         this.playerKillCommands = config.getStringList("event-commands.player-kill");
         this.teamWinCommands = config.getStringList("event-commands.team-win");
         this.teamLoseCommands = config.getStringList("event-commands.team-lose");
+        this.teamDrawCommands = config.getStringList("event-commands.team-draw");
+
+        // Debug log loaded event commands
+        plugin.getSLF4JLogger().info("[Config] Event commands loaded:");
+        plugin.getSLF4JLogger().info("  game-start: {}", this.gameStartCommands);
+        plugin.getSLF4JLogger().info("  round-start: {}", this.roundStartCommands);
+        plugin.getSLF4JLogger().info("  game-end: {}", this.gameEndCommands);
+        plugin.getSLF4JLogger().info("  player-kill: {}", this.playerKillCommands);
+        plugin.getSLF4JLogger().info("  team-win: {}", this.teamWinCommands);
+        plugin.getSLF4JLogger().info("  team-lose: {}", this.teamLoseCommands);
+        plugin.getSLF4JLogger().info("  team-draw: {}", this.teamDrawCommands);
 
         // Announcement settings
         this.announcementEnabled = config.getBoolean("announcement.enabled", true);
@@ -162,6 +174,10 @@ public class Config {
 
     public List<String> getTeamLoseCommands() {
         return teamLoseCommands;
+    }
+
+    public List<String> getTeamDrawCommands() {
+        return teamDrawCommands;
     }
 
     // Announcement getters
