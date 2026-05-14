@@ -348,8 +348,8 @@ public class Bomb {
         world.spawnParticle(org.bukkit.Particle.EXPLOSION_EMITTER, location, 1);
         world.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 10.0f, 0.5f);
 
-        // Insta-kill players within 20 block radius
-        double radiusSquared = 20.0 * 20.0;
+        // Insta-kill players within 8 block radius
+        double radiusSquared = 8.0 * 8.0;
         for (com.saratoga.snd.game.PlayerData pd : arena.getPlayers().values()) {
             Player p = pd.getPlayer();
             if (p != null && p.isOnline() && pd.isAlive()) {
