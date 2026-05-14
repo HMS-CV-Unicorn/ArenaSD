@@ -220,10 +220,12 @@ public class ScoreboardManager {
         objective.getScore("§9" + config.getBlueTeamName() + ": §f" + game.getBlueScore()).setScore(line--);
         objective.getScore("§7 ").setScore(line--);
 
-        // Your role
+        // Your team & role
+        String teamColor = data.getTeam() == Team.RED ? "§c" : "§9";
+        String teamName = data.getTeam() == Team.RED ? config.getRedTeamName() : config.getBlueTeamName();
         Role role = game.getRoleForTeam(data.getTeam());
         String roleStr = role == Role.ATTACKERS ? "§c攻撃側" : "§a防衛側";
-        objective.getScore("§f役割: " + roleStr).setScore(line--);
+        objective.getScore(teamColor + "§l" + teamName + " §7| " + roleStr).setScore(line--);
         objective.getScore("§7  ").setScore(line--);
 
         // Bomb status
@@ -258,16 +260,38 @@ public class ScoreboardManager {
         }
         objective.getScore("§7   ").setScore(line--);
 
-        // Alive players
-        int redAlive = arena.getAlivePlayersOnTeam(Team.RED).size();
-        int blueAlive = arena.getAlivePlayersOnTeam(Team.BLUE).size();
-        objective.getScore("§c生存: " + redAlive + " §f| §9" + blueAlive).setScore(line--);
-
         // Round time
         if (arena.getState() == ArenaState.PLAYING) {
             int time = game.getRoundTimeRemaining();
             String timeStr = String.format("%d:%02d", time / 60, time % 60);
             objective.getScore("§f残り時間: §e" + timeStr).setScore(line--);
+            objective.getScore("§7    ").setScore(line--);
+        }
+
+        // Alive member list — own team
+        Team myTeam = data.getTeam();
+        Team enemyTeam = myTeam.opposite();
+        String myTeamColor = myTeam == Team.RED ? "§c" : "§9";
+        String enemyTeamColor = enemyTeam == Team.RED ? "§c" : "§9";
+
+        // Show own team members (name visible)
+        java.util.List<PlayerData> myTeamPlayers = arena.getPlayersOnTeam(myTeam);
+        for (PlayerData pd : myTeamPlayers) {
+            if (line <= 0) break;
+            Player p = pd.getPlayer();
+            String pName = p != null ? p.getName() : "???";
+            if (pd.isAlive()) {
+                objective.getScore(myTeamColor + "✔ " + pName).setScore(line--);
+            } else {
+                objective.getScore("§8✘ §m" + pName).setScore(line--);
+            }
+        }
+
+        // Show enemy team alive/dead count
+        if (line > 0) {
+            int enemyAlive = arena.getAlivePlayersOnTeam(enemyTeam).size();
+            int enemyTotal = arena.getPlayersOnTeam(enemyTeam).size();
+            objective.getScore(enemyTeamColor + "敵: " + enemyAlive + "/" + enemyTotal + " 生存").setScore(line--);
         }
     }
 

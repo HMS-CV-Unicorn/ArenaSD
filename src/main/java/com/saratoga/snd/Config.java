@@ -37,6 +37,8 @@ public class Config {
     private List<String> roundStartCommands;
     private List<String> gameEndCommands;
     private List<String> playerKillCommands;
+    private List<String> teamWinCommands;
+    private List<String> teamLoseCommands;
 
     // Announcement settings
     private boolean announcementEnabled;
@@ -79,6 +81,8 @@ public class Config {
         this.roundStartCommands = config.getStringList("event-commands.round-start");
         this.gameEndCommands = config.getStringList("event-commands.game-end");
         this.playerKillCommands = config.getStringList("event-commands.player-kill");
+        this.teamWinCommands = config.getStringList("event-commands.team-win");
+        this.teamLoseCommands = config.getStringList("event-commands.team-lose");
 
         // Announcement settings
         this.announcementEnabled = config.getBoolean("announcement.enabled", true);
@@ -150,6 +154,14 @@ public class Config {
 
     public List<String> getPlayerKillCommands() {
         return playerKillCommands;
+    }
+
+    public List<String> getTeamWinCommands() {
+        return teamWinCommands;
+    }
+
+    public List<String> getTeamLoseCommands() {
+        return teamLoseCommands;
     }
 
     // Announcement getters

@@ -1,11 +1,13 @@
 package com.saratoga.snd.game;
 
 import com.saratoga.snd.SearchAndDestroy;
+import com.saratoga.snd.arena.SndArena;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -32,6 +34,7 @@ public class Bomb {
     }
 
     private final SearchAndDestroy plugin;
+    private final SndArena arena;
     private State state = State.NOT_SPAWNED;
 
     // Location
@@ -56,8 +59,9 @@ public class Bomb {
     private int actionProgress; // Ticks remaining
     private BukkitTask actionTask;
 
-    public Bomb(SearchAndDestroy plugin) {
+    public Bomb(SearchAndDestroy plugin, SndArena arena) {
         this.plugin = plugin;
+        this.arena = arena;
     }
 
     /**
@@ -163,6 +167,10 @@ public class Bomb {
         // Start explosion countdown
         this.explosionTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             explosionTimer--;
+
+            // Play tick sound to all arena players
+            playBombTickSound();
+
             if (explosionTimer <= 0) {
                 explosionTask.cancel();
                 explosionTask = null;
@@ -291,6 +299,28 @@ public class Bomb {
         if (explosionTask != null) {
             explosionTask.cancel();
             explosionTask = null;
+        }
+    }
+
+    /**
+     * Play tick sound to all arena players.
+     * Pitch increases as timer decreases for urgency.
+     */
+    private void playBombTickSound() {
+        float pitch;
+        if (explosionTimer <= 5) {
+            pitch = 2.0f;
+        } else if (explosionTimer <= 10) {
+            pitch = 1.5f;
+        } else {
+            pitch = 1.0f;
+        }
+
+        for (PlayerData pd : arena.getPlayers().values()) {
+            Player p = pd.getPlayer();
+            if (p != null && p.isOnline()) {
+                p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, pitch);
+            }
         }
     }
 

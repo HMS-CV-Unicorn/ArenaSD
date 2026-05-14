@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +62,8 @@ public class GameManager {
         this.currentRound = 0;
         this.attackingTeam = Team.RED;
 
-        // Execute game-start commands
-        executeEventCommands(config.getGameStartCommands(), null);
+        // Execute game-start commands (for all players)
+        executeEventCommandsForAll(config.getGameStartCommands());
 
         startNextRound();
     }
@@ -108,8 +109,8 @@ public class GameManager {
         arena.broadcast(Messages.roundStart(currentRound));
         arena.broadcast(Messages.score(redScore, blueScore));
 
-        // Execute round-start commands
-        executeEventCommands(config.getRoundStartCommands(), null);
+        // Execute round-start commands (for all players)
+        executeEventCommandsForAll(config.getRoundStartCommands());
 
         // Reset all players for new round
         for (PlayerData data : arena.getPlayers().values()) {
@@ -158,7 +159,7 @@ public class GameManager {
             bomb.cleanup();
         }
 
-        bomb = new Bomb(plugin);
+        bomb = new Bomb(plugin, arena);
         Location attackerSpawn = arena.getMap().getAttackerSpawn();
         if (attackerSpawn != null) {
             bomb.spawn(attackerSpawn.clone().add(0, 1, 0));
@@ -265,8 +266,14 @@ public class GameManager {
         String winnerName = winner == Team.RED ? config.getRedTeamName() : config.getBlueTeamName();
         arena.broadcast(Messages.matchWin(winnerName));
 
-        // Execute game-end commands
-        executeEventCommands(config.getGameEndCommands(), null);
+        // Execute game-end commands (for all players)
+        executeEventCommandsForAll(config.getGameEndCommands());
+
+        // Execute team-win commands for winning team players
+        executeTeamCommands(config.getTeamWinCommands(), winner);
+
+        // Execute team-lose commands for losing team players
+        executeTeamCommands(config.getTeamLoseCommands(), winner.opposite());
 
         arena.endGame();
     }
@@ -498,19 +505,47 @@ public class GameManager {
     }
 
     /**
-     * Execute event commands with map placeholder.
+     * Execute event commands for ALL players in the arena.
+     * Used for broadcast events (game-start, round-start, game-end).
      */
-    private void executeEventCommands(List<String> commands, Player targetPlayer) {
+    private void executeEventCommandsForAll(List<String> commands) {
         if (commands == null || commands.isEmpty())
             return;
 
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("<map>", arena.getMap().getName());
-        if (targetPlayer != null) {
-            placeholders.put("<player>", targetPlayer.getName());
+
+        List<Player> allPlayers = new ArrayList<>();
+        for (PlayerData pd : arena.getPlayers().values()) {
+            Player p = pd.getPlayer();
+            if (p != null && p.isOnline()) {
+                allPlayers.add(p);
+            }
         }
 
-        eventExecutor.executeCommands(commands, placeholders, targetPlayer);
+        eventExecutor.executeCommandsForAll(commands, placeholders, allPlayers);
+    }
+
+    /**
+     * Execute commands for a specific team's players.
+     * Used for team-win / team-lose events.
+     */
+    private void executeTeamCommands(List<String> commands, Team team) {
+        if (commands == null || commands.isEmpty())
+            return;
+
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("<map>", arena.getMap().getName());
+
+        List<Player> teamPlayers = new ArrayList<>();
+        for (PlayerData pd : arena.getPlayersOnTeam(team)) {
+            Player p = pd.getPlayer();
+            if (p != null && p.isOnline()) {
+                teamPlayers.add(p);
+            }
+        }
+
+        eventExecutor.executeCommandsForAll(commands, placeholders, teamPlayers);
     }
 
     /**

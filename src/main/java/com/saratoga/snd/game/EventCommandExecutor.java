@@ -4,6 +4,7 @@ import com.saratoga.snd.SearchAndDestroy;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public class EventCommandExecutor {
     }
 
     /**
-     * Execute commands for an event.
+     * Execute commands for an event with a single target player.
      * 
      * @param commands     List of command strings with [console]/[player]/[op]
      *                     prefixes
@@ -39,6 +40,69 @@ public class EventCommandExecutor {
             }
 
             executeCommand(finalCmd, targetPlayer);
+        }
+    }
+
+    /**
+     * Execute commands for an event, applying [player]/[op] commands to ALL
+     * specified players.
+     * Used for broadcast events (game-start, round-start, game-end) where
+     * commands should run for every player in the arena.
+     * 
+     * @param commands     List of command strings with [console]/[player]/[op]
+     *                     prefixes
+     * @param placeholders Map of placeholder -> replacement values
+     * @param allPlayers   Collection of players to execute [player]/[op] commands
+     *                     for
+     */
+    public void executeCommandsForAll(List<String> commands, Map<String, String> placeholders,
+            Collection<Player> allPlayers) {
+        if (commands == null || commands.isEmpty()) {
+            return;
+        }
+
+        for (String cmd : commands) {
+            // Replace placeholders (excluding <player> which is per-player)
+            String baseCmd = cmd;
+            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                if (!entry.getKey().equals("<player>")) {
+                    baseCmd = baseCmd.replace(entry.getKey(), entry.getValue());
+                }
+            }
+
+            if (baseCmd.startsWith("[console] ")) {
+                // Console commands: if <player> placeholder exists, run once per player
+                if (baseCmd.contains("<player>")) {
+                    for (Player p : allPlayers) {
+                        if (p != null && p.isOnline()) {
+                            String playerCmd = baseCmd.replace("<player>", p.getName());
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), playerCmd.substring(10));
+                        }
+                    }
+                } else {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), baseCmd.substring(10));
+                }
+            } else if (baseCmd.startsWith("[player] ") || baseCmd.startsWith("[op] ")) {
+                // Player/Op commands: run for each player
+                for (Player p : allPlayers) {
+                    if (p != null && p.isOnline()) {
+                        String playerCmd = baseCmd.replace("<player>", p.getName());
+                        executeCommand(playerCmd, p);
+                    }
+                }
+            } else {
+                // Default: console execution
+                if (baseCmd.contains("<player>")) {
+                    for (Player p : allPlayers) {
+                        if (p != null && p.isOnline()) {
+                            String playerCmd = baseCmd.replace("<player>", p.getName());
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), playerCmd);
+                        }
+                    }
+                } else {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), baseCmd);
+                }
+            }
         }
     }
 

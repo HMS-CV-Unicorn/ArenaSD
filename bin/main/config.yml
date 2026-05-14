@@ -27,15 +27,30 @@ teams:
 # Event triggered commands
 # Prefixes: [console] / [player] / [op]
 # Placeholders: <player>, <map>, <killer>, <victim>
+# IMPORTANT: Each command must be quoted with "" to avoid YAML parsing issues
 event-commands:
   game-start: []
-    # Example: [console] broadcast <map>でSND試合開始！
+    # Example:
+    # - "[console] broadcast <map>でSND試合開始！"
   round-start: []
-    # Example: [console] say ラウンド開始
+    # Example:
+    # - "[op] loadout"
   game-end: []
-    # Example: [console] broadcast <map>の試合が終了しました
+    # Example:
+    # - "[console] broadcast <map>の試合が終了しました"
   player-kill: []
-    # Example: [op] eco give <killer> 100
+    # Example:
+    # - "[console] eco give <killer> 100"
+  # Commands for winning team players (runs for each player)
+  # Placeholders: <player>, <map>
+  team-win: []
+    # Example:
+    # - "[console] eco give <player> 1000"
+  # Commands for losing team players (runs for each player)
+  # Placeholders: <player>, <map>
+  team-lose: []
+    # Example:
+    # - "[console] eco give <player> 200"
 
 # Recruitment announcement
 # Broadcast server-wide when lobby opens
