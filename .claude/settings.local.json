@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn package *)",
+      "Bash(gradle build *)",
+      "Bash(./gradlew build *)"
+    ]
+  }
+}

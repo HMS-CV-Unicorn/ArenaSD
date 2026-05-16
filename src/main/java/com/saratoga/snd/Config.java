@@ -60,9 +60,18 @@ public class Config {
         FileConfiguration config = plugin.getConfig();
 
         // Round settings
-        this.maxRounds = config.getInt("rounds.max", 12);
+        this.maxRounds = config.getInt("rounds.max", 13);
         this.roundsToWin = config.getInt("rounds.rounds-to-win", 7);
         this.swapSidesAfter = config.getInt("rounds.swap-sides-after", 6);
+
+        // Warn if maxRounds is too low to allow either team to reach roundsToWin
+        int minRequired = 2 * this.roundsToWin - 1;
+        if (this.maxRounds < minRequired) {
+            plugin.getSLF4JLogger().warn(
+                "[Config] rounds.max ({}) が rounds.rounds-to-win ({}) の先取に必要な最小ラウンド数 ({}) を下回っています。" +
+                " 引き分けで終了するケースが発生する可能性があります。",
+                this.maxRounds, this.roundsToWin, minRequired);
+        }
         this.roundTimeLimit = config.getInt("rounds.time-limit-seconds", 120);
 
         // Bomb settings

@@ -72,10 +72,15 @@ public class ProtectionListener implements Listener {
             return;
         }
 
-        // Check friendly fire
+        // Check friendly fire and protect dead/waiting players
         var victimData = victimArena.getPlayerData(victim);
         var attackerData = attackerArena.getPlayerData(attacker);
         if (victimData != null && attackerData != null) {
+            // Dead players and mid-game joiners (alive=false) cannot be attacked
+            if (!victimData.isAlive() || !attackerData.isAlive()) {
+                event.setCancelled(true);
+                return;
+            }
             if (victimData.getTeam() == attackerData.getTeam()) {
                 event.setCancelled(true); // No friendly fire
             }

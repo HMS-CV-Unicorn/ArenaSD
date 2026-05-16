@@ -109,9 +109,6 @@ public class GameManager {
         arena.broadcast(Messages.roundStart(currentRound));
         arena.broadcast(Messages.score(redScore, blueScore));
 
-        // Execute round-start commands (for all players)
-        executeEventCommandsForAll(config.getRoundStartCommands());
-
         // Reset all players for new round
         for (PlayerData data : arena.getPlayers().values()) {
             data.resetForRound();
@@ -133,6 +130,9 @@ public class GameManager {
 
             // Teleport to spawns
             arena.teleportToSpawns();
+
+            // Execute round-start commands after teleport so loadout plugins apply correctly
+            executeEventCommandsForAll(config.getRoundStartCommands());
 
             // Spawn bomb
             spawnBomb();

@@ -51,11 +51,9 @@ public class SndArena {
             return false;
         }
 
-        // Allow joining during WAITING and COUNTDOWN (before first round starts)
-        // Block during PLAYING, INTERMISSION (between rounds), and ENDING
-        if (state != ArenaState.WAITING && state != ArenaState.COUNTDOWN) {
+        if (state == ArenaState.ENDING) {
             Messages.send(player, Messages.PREFIX.append(
-                    net.kyori.adventure.text.Component.text("試合が進行中です。終了までお待ちください。",
+                    net.kyori.adventure.text.Component.text("試合が終了中です。終了までお待ちください。",
                             net.kyori.adventure.text.format.NamedTextColor.RED)));
             return false;
         }
@@ -90,8 +88,20 @@ public class SndArena {
         // Broadcast recruitment announcement
         broadcastServerAnnouncementIfNeeded();
 
-        // Check if we can start
-        checkStart();
+        // If game is already in progress, put player in waiting room for next round
+        if (state == ArenaState.PLAYING || state == ArenaState.INTERMISSION) {
+            data.setAlive(false);
+            Messages.send(player, Messages.PREFIX.append(
+                    net.kyori.adventure.text.Component.text("次のラウンド開始まで待機部屋でお待ちください。",
+                            net.kyori.adventure.text.format.NamedTextColor.YELLOW)));
+            // Register into the existing scoreboard so HUD and nametag visibility work
+            if (scoreboardManager != null) {
+                scoreboardManager.addPlayer(player, data);
+            }
+        } else {
+            // Check if we can start (only triggers in WAITING state)
+            checkStart();
+        }
 
         return true;
     }
@@ -117,6 +127,11 @@ public class SndArena {
 
         // Remove from arena manager tracking
         plugin.getArenaManager().removePlayerFromArenaTracking(player.getUniqueId());
+
+        // Remove from scoreboards (must be before restore so main scoreboard is set cleanly)
+        if (scoreboardManager != null) {
+            scoreboardManager.removePlayer(player);
+        }
 
         // Restore player state
         SavedPlayerState saved = savedStates.remove(player.getUniqueId());

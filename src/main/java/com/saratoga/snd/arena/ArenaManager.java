@@ -205,11 +205,24 @@ public class ArenaManager {
     }
 
     /**
-     * Find a WAITING arena that has room for more players.
+     * Find a WAITING or COUNTDOWN arena that has room for more players.
      */
     public SndArena findWaitingArena() {
         for (SndArena arena : arenas.values()) {
-            if (arena.getState() == ArenaState.WAITING
+            if ((arena.getState() == ArenaState.WAITING || arena.getState() == ArenaState.COUNTDOWN)
+                    && arena.getPlayerCount() < plugin.getMainConfig().getMaxPlayers()) {
+                return arena;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find a PLAYING or INTERMISSION arena that has room (for mid-game join).
+     */
+    public SndArena findActiveArena() {
+        for (SndArena arena : arenas.values()) {
+            if ((arena.getState() == ArenaState.PLAYING || arena.getState() == ArenaState.INTERMISSION)
                     && arena.getPlayerCount() < plugin.getMainConfig().getMaxPlayers()) {
                 return arena;
             }
@@ -238,23 +251,31 @@ public class ArenaManager {
     }
 
     /**
-     * Auto-join logic: find waiting arena or create new one.
+     * Auto-join logic: prefer waiting arenas, fall back to active arenas (mid-game join).
      */
     public JoinResult autoJoin(Player player) {
-        // 1. Try to find WAITING arena with players already in it
+        // 1. Try to find WAITING/COUNTDOWN arena with room
         SndArena waitingArena = findWaitingArena();
         if (waitingArena != null) {
             if (joinArena(player, waitingArena.getMap().getName())) {
                 return new JoinResult(true, waitingArena.getMap().getName());
             }
-            // Retry with another WAITING arena (in case first one filled up)
+            // Retry in case first one filled up
             waitingArena = findWaitingArena();
             if (waitingArena != null && joinArena(player, waitingArena.getMap().getName())) {
                 return new JoinResult(true, waitingArena.getMap().getName());
             }
         }
 
-        // 2. Create new arena on available map
+        // 2. Join an active arena (mid-game join, player waits for next round)
+        SndArena activeArena = findActiveArena();
+        if (activeArena != null) {
+            if (joinArena(player, activeArena.getMap().getName())) {
+                return new JoinResult(true, activeArena.getMap().getName());
+            }
+        }
+
+        // 3. Create new arena only when no existing arena has room
         SndMap availableMap = findAvailableMap();
         if (availableMap != null) {
             if (joinArena(player, availableMap.getName())) {

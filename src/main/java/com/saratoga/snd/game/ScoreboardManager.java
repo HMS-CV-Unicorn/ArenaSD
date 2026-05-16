@@ -129,9 +129,9 @@ public class ScoreboardManager {
 
         // Assign all other players too
         for (PlayerData otherData : arena.getPlayers().values()) {
-            if (!otherData.getPlayer().getUniqueId().equals(player.getUniqueId())) {
-                assignToTeam(otherData.getPlayer(), otherData.getTeam(), scoreboard);
-            }
+            Player otherPlayer = otherData.getPlayer();
+            if (otherPlayer == null || otherPlayer.getUniqueId().equals(player.getUniqueId())) continue;
+            assignToTeam(otherPlayer, otherData.getTeam(), scoreboard);
         }
     }
 
